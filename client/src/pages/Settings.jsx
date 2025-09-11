@@ -1,4 +1,4 @@
-import React from 'react';
+import React from "react";
 
 const Settings = () => {
   return (
@@ -15,7 +15,9 @@ const Settings = () => {
                 <div className="w-4 h-4 bg-white rounded-full shadow-md transform translate-x-6"></div>
               </div>
             </div>
-            <p className="text-sm text-gray-400 mt-2">Theme switching is a future feature.</p>
+            <p className="text-sm text-gray-400 mt-2">
+              Theme switching is a future feature.
+            </p>
           </div>
 
           <div className="border-t border-gray-700 pt-6">
@@ -26,12 +28,17 @@ const Settings = () => {
                 Update Key
               </button>
             </div>
-            <p className="text-sm text-gray-400 mt-2">Functionality to update the API key will be added later.</p>
+            <p className="text-sm text-gray-400 mt-2">
+              Functionality to update the API key will be added later.
+            </p>
           </div>
 
           <div className="border-t border-gray-700 pt-6">
             <h3 className="text-lg font-medium mb-2">Notifications</h3>
-             <p className="text-gray-400">Notification preferences will be available here in a future update.</p>
+            <p className="text-gray-400">
+              Notification preferences will be available here in a future
+              update.
+            </p>
           </div>
         </div>
       </div>

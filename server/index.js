@@ -23,22 +23,38 @@ const db = new sqlite3.Database("./database.db", (err) => {
   console.log("Connected to the SQLite database.");
 });
 
-db.serialize(() => {
-  db.run(`CREATE TABLE IF NOT EXISTS tasks (
-        id INTEGER PRIMARY KEY AUTOINCREMENT,
-        title TEXT NOT NULL,
-        status TEXT NOT NULL,
-        dueDate DATETIME
-    )`);
+const dbSchema = `
+  DROP TABLE IF EXISTS study_plans;
+  
+  CREATE TABLE IF NOT EXISTS study_plans (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    title TEXT NOT NULL,
+    video_url TEXT,
+    process_time DATETIME,
+    note_format TEXT NOT NULL,
+    status TEXT NOT NULL DEFAULT 'Not Started',
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+  );
 
-  db.run(`CREATE TABLE IF NOT EXISTS history (
-        id INTEGER PRIMARY KEY AUTOINCREMENT,
-        type TEXT NOT NULL,
-        content TEXT NOT NULL,
-        notes TEXT,
-        quiz TEXT,
-        createdAt DATETIME DEFAULT CURRENT_TIMESTAMP
-    )`);
+  CREATE TABLE IF NOT EXISTS history (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    type TEXT NOT NULL,
+    content TEXT NOT NULL,
+    notes TEXT,
+    quiz TEXT,
+    createdAt DATETIME DEFAULT CURRENT_TIMESTAMP
+  );
+`;
+
+db.exec(dbSchema, (err) => {
+  if (err) {
+    console.error("Error initializing database:", err.message);
+  } else {
+    console.log("Database tables created or already exist.");
+    // Start the background processor only after the database is ready
+    setInterval(processDueStudyPlans, 60 * 1000);
+    console.log("Background study plan processor started.");
+  }
 });
 
 // Google AI Studio setup
@@ -164,41 +180,83 @@ app.post("/api/generate", upload.single("file"), async (req, res) => {
     res.json(jsonResponse);
   } catch (error) {
     console.error("Error in /api/generate:", error);
+    // Check if the error is a Google API error with a 429 status
+    if (
+      error.status === 429 ||
+      (error.message && error.message.includes("429"))
+    ) {
+      return res.status(429).json({
+        error:
+          "API quota exceeded. Please check your billing or upgrade your plan.",
+      });
+    }
     res
       .status(500)
       .json({ error: "An unexpected error occurred on the server." });
   }
 });
 
-app.get("/api/planner", (req, res) => {
-  const { status } = req.query;
-  let query = "SELECT * FROM tasks";
-  if (status === "planned" || status === "unplanned") {
-    query += ` WHERE status = ?`;
-  }
+// CRUD for Study Plans
+app.post("/api/study-plans", (req, res) => {
+  const { title, video_url, process_time, note_format, status } = req.body;
 
-  db.all(query, [status], (err, rows) => {
-    if (err) {
-      res.status(500).json({ error: err.message });
-      return;
-    }
-    res.json(rows);
-  });
-});
-
-app.post("/api/planner", (req, res) => {
-  const { title, status, dueDate } = req.body;
   db.run(
-    `INSERT INTO tasks (title, status, dueDate) VALUES (?, ?, ?)`,
-    [title, status, dueDate],
+    `INSERT INTO study_plans (title, video_url, process_time, note_format, status) VALUES (?, ?, ?, ?, ?)`,
+    [title, video_url, process_time, note_format, status || "Not Started"],
     function (err) {
       if (err) {
-        res.status(500).json({ error: err.message });
-        return;
+        console.error("DB Error on POST /api/study-plans:", err.message);
+        return res.status(500).json({ error: err.message });
       }
-      res.json({ id: this.lastID, title, status, dueDate });
+      res.status(201).json({ id: this.lastID, ...req.body });
     }
   );
+});
+
+app.get("/api/study-plans", (req, res) => {
+  db.all(
+    `SELECT * FROM study_plans ORDER BY process_time ASC`,
+    [],
+    (err, rows) => {
+      if (err) {
+        return res.status(500).json({ error: err.message });
+      }
+      res.json(rows);
+    }
+  );
+});
+
+app.put("/api/study-plans/:id", (req, res) => {
+  const { title, video_url, process_time, note_format, status } = req.body;
+  const { id } = req.params;
+
+  db.run(
+    `UPDATE study_plans SET title = ?, video_url = ?, process_time = ?, note_format = ?, status = ? WHERE id = ?`,
+    [title, video_url, process_time, note_format, status, id],
+    function (err) {
+      if (err) {
+        console.error(`DB Error on PUT /api/study-plans/${id}:`, err.message);
+        return res.status(500).json({ error: err.message });
+      }
+      if (this.changes === 0) {
+        return res.status(404).json({ error: "Study plan not found" });
+      }
+      res.json({ id, ...req.body });
+    }
+  );
+});
+
+app.delete("/api/study-plans/:id", (req, res) => {
+  const { id } = req.params;
+  db.run(`DELETE FROM study_plans WHERE id = ?`, id, function (err) {
+    if (err) {
+      return res.status(500).json({ error: err.message });
+    }
+    if (this.changes === 0) {
+      return res.status(404).json({ error: "Study plan not found" });
+    }
+    res.status(204).send(); // No content
+  });
 });
 
 app.get("/api/history", (req, res) => {
@@ -220,32 +278,38 @@ app.get("/api/stats", async (req, res) => {
       });
     });
 
-    const tasksCreated = await new Promise((resolve, reject) => {
-      db.get("SELECT COUNT(*) as count FROM tasks", (err, row) => {
+    const plansCreated = await new Promise((resolve, reject) => {
+      db.get("SELECT COUNT(*) as count FROM study_plans", (err, row) => {
         if (err) reject(err);
         resolve(row ? row.count : 0);
       });
     });
 
-    const tasksCompleted = await new Promise((resolve, reject) => {
-      db.get("SELECT COUNT(*) as count FROM tasks WHERE status = 'completed'", (err, row) => {
-        if (err) reject(err);
-        resolve(row ? row.count : 0);
-      });
+    const plansCompleted = await new Promise((resolve, reject) => {
+      db.get(
+        "SELECT COUNT(*) as count FROM study_plans WHERE status = 'Completed'",
+        (err, row) => {
+          if (err) reject(err);
+          resolve(row ? row.count : 0);
+        }
+      );
     });
 
-    const tasksPending = await new Promise((resolve, reject) => {
-      db.get("SELECT COUNT(*) as count FROM tasks WHERE status != 'completed'", (err, row) => {
-        if (err) reject(err);
-        resolve(row ? row.count : 0);
-      });
+    const plansPending = await new Promise((resolve, reject) => {
+      db.get(
+        "SELECT COUNT(*) as count FROM study_plans WHERE status = 'Pending'",
+        (err, row) => {
+          if (err) reject(err);
+          resolve(row ? row.count : 0);
+        }
+      );
     });
 
     res.json({
       notesGenerated,
-      tasksCreated,
-      tasksCompleted,
-      tasksPending,
+      tasksCreated: plansCreated, // Renamed for consistency on the frontend
+      tasksCompleted: plansCompleted,
+      tasksPending: plansPending,
     });
   } catch (error) {
     res.status(500).json({ error: error.message });
@@ -254,56 +318,73 @@ app.get("/api/stats", async (req, res) => {
 
 // Background task processor
 const processDueStudyPlans = async () => {
-  console.log('Checking for due study plans...');
+  console.log("Checking for due study plans...");
   const now = new Date().toISOString();
-  
-  db.all(`SELECT * FROM study_plans WHERE process_time <= ? AND status = 'Pending'`, [now], async (err, plans) => {
-    if (err) {
-      console.error('Error fetching due plans:', err);
-      return;
-    }
 
-    if (plans.length === 0) {
-      console.log('No due plans found.');
-      return;
-    }
+  db.all(
+    `SELECT * FROM study_plans WHERE process_time <= ? AND status = 'Pending'`,
+    [now],
+    async (err, plans) => {
+      if (err) {
+        console.error("Error fetching due plans:", err);
+        return;
+      }
 
-    for (const plan of plans) {
-      console.log(`Processing plan ID: ${plan.id} - ${plan.title}`);
-      
-      // 1. Update status to 'Processing'
-      db.run(`UPDATE study_plans SET status = 'Processing' WHERE id = ?`, plan.id);
+      if (plans.length === 0) {
+        console.log("No due plans found.");
+        return;
+      }
 
-      try {
-        // 2. Generate notes (re-using the /generate logic)
-        // This is a simplified version. A real app would refactor the generation logic
-        // into a function that can be called from multiple places.
-        const { notes, quiz } = await generateContentForPlan(plan);
+      for (const plan of plans) {
+        console.log(`Processing plan ID: ${plan.id} - ${plan.title}`);
 
-        // 3. Save to history
+        // 1. Update status to 'Processing'
         db.run(
-          `INSERT INTO history (type, content, notes, quiz) VALUES (?, ?, ?, ?)`,
-          ['study_plan', plan.video_url, notes, JSON.stringify(quiz)]
+          `UPDATE study_plans SET status = 'Processing' WHERE id = ?`,
+          plan.id
         );
 
-        // 4. Update status to 'Completed'
-        db.run(`UPDATE study_plans SET status = 'Completed' WHERE id = ?`, plan.id);
-        console.log(`Successfully processed and completed plan ID: ${plan.id}`);
+        try {
+          // 2. Generate notes (re-using the /generate logic)
+          // This is a simplified version. A real app would refactor the generation logic
+          // into a function that can be called from multiple places.
+          const { notes, quiz } = await generateContentForPlan(plan);
 
-      } catch (processingError) {
-        console.error(`Failed to process plan ID: ${plan.id}`, processingError);
-        // Revert status to 'Pending' or set to 'Failed'
-        db.run(`UPDATE study_plans SET status = 'Failed' WHERE id = ?`, plan.id);
+          // 3. Save to history
+          db.run(
+            `INSERT INTO history (type, content, notes, quiz) VALUES (?, ?, ?, ?)`,
+            ["study_plan", plan.video_url, notes, JSON.stringify(quiz)]
+          );
+
+          // 4. Update status to 'Completed'
+          db.run(
+            `UPDATE study_plans SET status = 'Completed' WHERE id = ?`,
+            plan.id
+          );
+          console.log(
+            `Successfully processed and completed plan ID: ${plan.id}`
+          );
+        } catch (processingError) {
+          console.error(
+            `Failed to process plan ID: ${plan.id}`,
+            processingError
+          );
+          // Revert status to 'Pending' or set to 'Failed'
+          db.run(
+            `UPDATE study_plans SET status = 'Failed' WHERE id = ?`,
+            plan.id
+          );
+        }
       }
     }
-  });
+  );
 };
 
 // Helper function to encapsulate generation logic for the background task
 async function generateContentForPlan(plan) {
-    const { video_url, note_format } = plan;
+  const { video_url, note_format } = plan;
 
-    const jsonPromptStructure = `
+  const jsonPromptStructure = `
         Your response MUST be a valid JSON object with the following structure:
         {
           "notes": "A string containing detailed, well-structured study notes in ${note_format} format.",
@@ -315,29 +396,45 @@ async function generateContentForPlan(plan) {
         Do not include any other text, markdown, or formatting outside of this single JSON object.
     `;
 
-    let prompt;
-    try {
-        const transcript = await YoutubeTranscript.fetchTranscript(video_url);
-        const transcriptText = transcript.map((item) => item.text).join(" ");
-        prompt = `Based on the following transcript, generate study notes in ${note_format} format and a quiz. Transcript: "${transcriptText}" ${jsonPromptStructure}`;
-    } catch (error) {
-        console.warn(`Transcript fetch failed for ${video_url}. Falling back to multimodal.`);
-        prompt = `Directly analyze the video at ${video_url}. Generate study notes in ${note_format} format and a quiz. ${jsonPromptStructure}`;
-    }
+  let prompt;
+  try {
+    const transcript = await YoutubeTranscript.fetchTranscript(video_url);
+    const transcriptText = transcript.map((item) => item.text).join(" ");
+    prompt = `Based on the following transcript, generate study notes in ${note_format} format and a quiz. Transcript: "${transcriptText}" ${jsonPromptStructure}`;
+  } catch (error) {
+    console.warn(
+      `Transcript fetch failed for ${video_url}. Falling back to multimodal.`
+    );
+    prompt = `Directly analyze the video at ${video_url}. Generate study notes in ${note_format} format and a quiz. ${jsonPromptStructure}`;
+  }
 
+  try {
     const model = genAI.getGenerativeModel({ model: "gemini-1.5-pro-latest" });
     const result = await model.generateContent(prompt);
     const response = await result.response;
     const text = await response.text();
 
-    const cleanedText = text.replace(/```json/g, "").replace(/```/g, "").trim();
+    const cleanedText = text
+      .replace(/```json/g, "")
+      .replace(/```/g, "")
+      .trim();
     return JSON.parse(cleanedText);
+  } catch (error) {
+    // Check for quota errors and re-throw a specific error message
+    if (
+      error.status === 429 ||
+      (error.message && error.message.includes("429"))
+    ) {
+      console.error(`Quota exceeded for plan ID: ${plan.id}.`);
+      throw new Error("API quota exceeded. The plan will be retried later.");
+    }
+    // For other errors, throw a generic message
+    throw new Error(`Failed to generate content from AI: ${error.message}`);
+  }
 }
 
-
 // Run the processor every minute
-setInterval(processDueStudyPlans, 60 * 1000);
-
+// setInterval(processDueStudyPlans, 60 * 1000);
 
 app.listen(port, () => {
   console.log(`Server listening on port ${port}`);

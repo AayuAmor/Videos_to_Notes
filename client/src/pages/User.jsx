@@ -1,4 +1,4 @@
-import React from 'react';
+import React from "react";
 
 const User = () => {
   return (
@@ -17,7 +17,8 @@ const User = () => {
         <div className="border-t border-gray-700 pt-6">
           <h3 className="text-xl font-bold mb-4">Account Details</h3>
           <p className="text-gray-400">
-            This is a placeholder user profile. In a full application, this page would display user information, account settings, and more.
+            This is a placeholder user profile. In a full application, this page
+            would display user information, account settings, and more.
           </p>
         </div>
       </div>

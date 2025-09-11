@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect } from "react";
 
 const StatCard = ({ title, value }) => (
   <div className="bg-gray-800 p-6 rounded-lg shadow-md text-center">
@@ -15,14 +15,14 @@ const Stats = () => {
   useEffect(() => {
     const fetchStats = async () => {
       try {
-        const response = await fetch('http://localhost:8080/api/stats');
+        const response = await fetch("http://localhost:8080/api/stats");
         if (!response.ok) {
-          throw new Error('Network response was not ok');
+          throw new Error("Network response was not ok");
         }
         const data = await response.json();
         setStats(data);
       } catch (err) {
-        setError('Failed to fetch statistics.');
+        setError("Failed to fetch statistics.");
         console.error(err);
       } finally {
         setLoading(false);
@@ -51,7 +51,9 @@ const Stats = () => {
           <StatCard title="Tasks Pending" value={stats.tasksPending} />
         </div>
       ) : (
-        <p className="text-center text-gray-500 mt-10">No statistics available.</p>
+        <p className="text-center text-gray-500 mt-10">
+          No statistics available.
+        </p>
       )}
     </div>
   );
