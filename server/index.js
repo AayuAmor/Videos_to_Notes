@@ -4,6 +4,7 @@ import dotenv from 'dotenv';
 import multer from 'multer';
 import { GoogleGenerativeAI } from '@google/generative-ai';
 import sqlite3 from 'sqlite3';
+import { YoutubeTranscript } from 'youtube-transcript';
 
 dotenv.config();
 
@@ -56,42 +57,72 @@ app.post('/api/generate', upload.single('file'), async (req, res) => {
         const { youtubeUrl } = req.body;
         const file = req.file;
 
-        let prompt = '';
+        let prompt;
+        let contentToProcess = '';
+        let sourceType = '';
+        let sourceIdentifier = '';
 
         if (youtubeUrl) {
-            // This is a placeholder. In a real app, you'd use a library to get the transcript.
-            prompt = `Extract a transcript from the YouTube video at this URL: ${youtubeUrl}. Then, based on the transcript, generate detailed study notes and a quiz with multiple-choice and short-answer questions.`;
+            try {
+                const transcript = await YoutubeTranscript.fetchTranscript(youtubeUrl);
+                contentToProcess = transcript.map(item => item.text).join(' ');
+                sourceType = 'youtube';
+                sourceIdentifier = youtubeUrl;
+            } catch (error) {
+                console.error('Failed to fetch YouTube transcript:', error);
+                return res.status(400).json({ error: 'Failed to fetch transcript from the provided YouTube URL. Please check the URL and try again.' });
+            }
         } else if (file) {
-            // This is a placeholder. Multimodal capabilities of Gemini 2.5 are not fully available in the public API yet.
-            // We will simulate this by using a text-based prompt.
-            prompt = `Assume you have received an audio or video file. Transcribe the content, then generate detailed study notes and a quiz with multiple-choice and short-answer questions based on the transcription. The file content is simulated here.`;
+            // Placeholder for file processing. For now, we'll use a simulated text prompt.
+            // In a real implementation, you would use a speech-to-text API here for audio/video files.
+            contentToProcess = `Simulated content from uploaded file: ${file.originalname}. The user wants notes and a quiz from this.`;
+            sourceType = 'file';
+            sourceIdentifier = file.originalname;
         } else {
             return res.status(400).json({ error: 'No YouTube URL or file provided.' });
         }
 
+        if (!contentToProcess) {
+            return res.status(400).json({ error: 'Could not extract any content to process.' });
+        }
+
+        prompt = `
+            Based on the following text, generate detailed study notes and a quiz.
+            The quiz should include a mix of multiple-choice questions (with 4 options) and short-answer questions.
+
+            Text to process: "${contentToProcess}"
+
+            Your response MUST be a valid JSON object with the following structure:
+            {
+              "notes": "A string containing detailed, well-structured study notes.",
+              "quiz": [
+                { "question": "string", "options": ["string", "string", "string", "string"], "answer": "string" },
+                { "question": "string", "answer": "string" }
+              ]
+            }
+            Do not include any other text or formatting outside of this JSON structure.
+        `;
+
         const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
 
-        const result = await model.generateContent(prompt + `
-        
-        Provide the output in a structured JSON format like this:
-        {
-          "notes": "string",
-          "quiz": [
-            { "question": "string", "options": ["a","b","c","d"], "answer": "string" },
-            { "question": "string", "answer": "string" }
-          ]
-        }
-        `);
+        const result = await model.generateContent(prompt);
         const response = await result.response;
         const text = await response.text();
 
-        // Clean the response to get valid JSON
-        const cleanedText = text.replace(/```json/g, '').replace(/```/g, '').trim();
-        const jsonResponse = JSON.parse(cleanedText);
+        let jsonResponse;
+        try {
+            // Clean the response to get valid JSON
+            const cleanedText = text.replace(/```json/g, '').replace(/```/g, '').trim();
+            jsonResponse = JSON.parse(cleanedText);
+        } catch (parseError) {
+            console.error('Failed to parse JSON from AI response:', parseError);
+            console.error('Raw AI response:', text);
+            return res.status(500).json({ error: 'The AI returned an invalid format. Please try again.' });
+        }
 
         // Save to history
         db.run(`INSERT INTO history (type, content, notes, quiz) VALUES (?, ?, ?, ?)`, 
-            [youtubeUrl ? 'youtube' : 'file', youtubeUrl || file.originalname, jsonResponse.notes, JSON.stringify(jsonResponse.quiz)],
+            [sourceType, sourceIdentifier, jsonResponse.notes, JSON.stringify(jsonResponse.quiz)],
             (err) => {
                 if (err) {
                     console.error('Failed to save history:', err);
@@ -102,8 +133,8 @@ app.post('/api/generate', upload.single('file'), async (req, res) => {
         res.json(jsonResponse);
 
     } catch (error) {
-        console.error(error);
-        res.status(500).json({ error: 'Failed to generate content from AI.' });
+        console.error('Error in /api/generate:', error);
+        res.status(500).json({ error: 'An unexpected error occurred on the server.' });
     }
 });
 
