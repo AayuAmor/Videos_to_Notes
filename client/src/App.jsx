@@ -1,12 +1,12 @@
-import React from 'react';
-import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
-import Sidebar from './components/Sidebar';
-import Dashboard from './pages/Dashboard';
-import Planner from './pages/Planner';
-import Stats from './pages/Stats';
-import User from './pages/User';
-import History from './pages/History';
-import Settings from './pages/Settings';
+import React from "react";
+import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
+import Sidebar from "./components/Sidebar";
+import Dashboard from "./pages/Dashboard";
+import Planner from "./pages/Planner";
+import Stats from "./pages/Stats";
+import User from "./pages/User";
+import History from "./pages/History";
+import Settings from "./pages/Settings";
 
 function App() {
   return (

@@ -1,6 +1,6 @@
-import React from 'react';
-import PlannerCard from '../components/PlannerCard';
-import GenerateNotesCard from '../components/GenerateNotesCard';
+import React from "react";
+import PlannerCard from "../components/PlannerCard";
+import GenerateNotesCard from "../components/GenerateNotesCard";
 
 const Dashboard = () => {
   return (

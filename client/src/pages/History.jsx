@@ -1,4 +1,4 @@
-import React from 'react';
+import React from "react";
 
 const History = () => {
   return <h1 className="text-3xl font-bold">History</h1>;
