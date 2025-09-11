@@ -211,6 +211,47 @@ app.get("/api/history", (req, res) => {
   });
 });
 
+app.get("/api/stats", async (req, res) => {
+  try {
+    const notesGenerated = await new Promise((resolve, reject) => {
+      db.get("SELECT COUNT(*) as count FROM history", (err, row) => {
+        if (err) reject(err);
+        resolve(row ? row.count : 0);
+      });
+    });
+
+    const tasksCreated = await new Promise((resolve, reject) => {
+      db.get("SELECT COUNT(*) as count FROM tasks", (err, row) => {
+        if (err) reject(err);
+        resolve(row ? row.count : 0);
+      });
+    });
+
+    const tasksCompleted = await new Promise((resolve, reject) => {
+      db.get("SELECT COUNT(*) as count FROM tasks WHERE status = 'completed'", (err, row) => {
+        if (err) reject(err);
+        resolve(row ? row.count : 0);
+      });
+    });
+
+    const tasksPending = await new Promise((resolve, reject) => {
+      db.get("SELECT COUNT(*) as count FROM tasks WHERE status != 'completed'", (err, row) => {
+        if (err) reject(err);
+        resolve(row ? row.count : 0);
+      });
+    });
+
+    res.json({
+      notesGenerated,
+      tasksCreated,
+      tasksCompleted,
+      tasksPending,
+    });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
 app.listen(port, () => {
   console.log(`Server listening on port ${port}`);
 });
