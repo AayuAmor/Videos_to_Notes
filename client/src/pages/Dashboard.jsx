@@ -1,6 +1,7 @@
 import React from "react";
 import PlannerCard from "../components/PlannerCard";
 import GenerateNotesCard from "../components/GenerateNotesCard";
+import FeaturesSection from "../components/FeaturesSection";
 
 const Dashboard = () => {
   return (
@@ -14,6 +15,7 @@ const Dashboard = () => {
           <GenerateNotesCard />
         </div>
       </div>
+      <FeaturesSection />
     </div>
   );
 };
