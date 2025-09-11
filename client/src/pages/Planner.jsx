@@ -1,24 +1,20 @@
-import React, { useState, useEffect } from "react";
-import AddTaskModal from "../components/AddTaskModal";
+import React, { useState, useEffect } from 'react';
+import CreateStudyPlanModal from '../components/CreateStudyPlanModal';
 
 const Planner = () => {
-  const [tasks, setTasks] = useState([]);
+  const [plans, setPlans] = useState([]);
   const [isModalOpen, setIsModalOpen] = useState(false);
-  const [filter, setFilter] = useState("all"); // 'all', 'planned', 'unplanned'
+  const [selectedPlan, setSelectedPlan] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
-  const fetchTasks = async (currentFilter) => {
+  const fetchPlans = async () => {
     setLoading(true);
     try {
-      const url =
-        currentFilter === "all"
-          ? "http://localhost:8080/api/planner"
-          : `http://localhost:8080/api/planner?status=${currentFilter}`;
-      const response = await fetch(url);
-      if (!response.ok) throw new Error("Failed to fetch tasks");
+      const response = await fetch('http://localhost:8080/api/study-plans');
+      if (!response.ok) throw new Error('Failed to fetch study plans');
       const data = await response.json();
-      setTasks(data);
+      setPlans(data);
     } catch (err) {
       setError(err.message);
     } finally {
@@ -27,110 +23,108 @@ const Planner = () => {
   };
 
   useEffect(() => {
-    fetchTasks(filter);
-  }, [filter]);
+    fetchPlans();
+  }, []);
 
-  const handleAddTask = async ({ title, dueDate }) => {
+  const handleSavePlan = async (planData) => {
+    const isEditing = !!planData.id;
+    const url = isEditing ? `http://localhost:8080/api/study-plans/${planData.id}` : 'http://localhost:8080/api/study-plans';
+    const method = isEditing ? 'PUT' : 'POST';
+
     try {
-      const response = await fetch("http://localhost:8080/api/planner", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ title, status: "unplanned", dueDate }),
+      const response = await fetch(url, {
+        method,
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(planData),
       });
-      if (!response.ok) throw new Error("Failed to add task");
-      fetchTasks(filter); // Refetch tasks to show the new one
+      if (!response.ok) throw new Error(`Failed to ${isEditing ? 'update' : 'create'} plan`);
+      fetchPlans(); // Refetch to show the new/updated plan
     } catch (err) {
       setError(err.message);
     }
   };
 
-  const filteredTasks = tasks.filter((task) => {
-    if (filter === "all") return true;
-    return task.status === filter;
-  });
+  const handleDeletePlan = async (planId) => {
+    if (!window.confirm('Are you sure you want to delete this study plan?')) return;
+
+    try {
+      const response = await fetch(`http://localhost:8080/api/study-plans/${planId}`, {
+        method: 'DELETE',
+      });
+      if (!response.ok) throw new Error('Failed to delete plan');
+      fetchPlans(); // Refetch to remove the deleted plan
+    } catch (err) {
+      setError(err.message);
+    }
+  };
+
+  const openModalForNew = () => {
+    setSelectedPlan(null);
+    setIsModalOpen(true);
+  };
+
+  const openModalForEdit = (plan) => {
+    setSelectedPlan(plan);
+    setIsModalOpen(true);
+  };
+
+  const getStatusChip = (status) => {
+    switch (status) {
+      case 'Completed':
+        return 'bg-green-500/30 text-green-300';
+      case 'Processing':
+        return 'bg-blue-500/30 text-blue-300';
+      case 'Failed':
+        return 'bg-red-500/30 text-red-300';
+      case 'Pending':
+      default:
+        return 'bg-yellow-500/30 text-yellow-300';
+    }
+  };
 
   return (
     <div>
-      <h1 className="text-3xl font-bold mb-8">Planner</h1>
+      <h1 className="text-3xl font-bold mb-8">Study Planner</h1>
       <div className="bg-gray-800 p-6 rounded-lg shadow-md mb-8 flex justify-between items-center">
-        <h2 className="text-xl font-bold">Manage Your Tasks</h2>
-        <button
-          onClick={() => setIsModalOpen(true)}
-          className="bg-blue-600 px-6 py-3 rounded-md font-bold hover:bg-blue-700"
-        >
-          Add New Task
+        <h2 className="text-xl font-bold">Manage Your Study Plans</h2>
+        <button onClick={openModalForNew} className="bg-blue-600 px-6 py-3 rounded-md font-bold hover:bg-blue-700">
+          Create New Plan
         </button>
       </div>
 
-      <AddTaskModal
+      <CreateStudyPlanModal
         isOpen={isModalOpen}
         onClose={() => setIsModalOpen(false)}
-        onAddTask={handleAddTask}
+        onSave={handleSavePlan}
+        existingPlan={selectedPlan}
       />
 
       <div className="bg-gray-800 p-6 rounded-lg shadow-md">
-        <div className="flex justify-between items-center mb-4">
-          <h2 className="text-xl font-bold">Tasks</h2>
-          <div className="flex space-x-2 text-sm">
-            <button
-              onClick={() => setFilter("unplanned")}
-              className={`px-4 py-2 rounded-md ${
-                filter === "unplanned" ? "bg-blue-600" : "bg-gray-700"
-              }`}
-            >
-              Unplanned
-            </button>
-            <button
-              onClick={() => setFilter("planned")}
-              className={`px-4 py-2 rounded-md ${
-                filter === "planned" ? "bg-blue-600" : "bg-gray-700"
-              }`}
-            >
-              Planned
-            </button>
-            <button
-              onClick={() => setFilter("all")}
-              className={`px-4 py-2 rounded-md ${
-                filter === "all" ? "bg-blue-600" : "bg-gray-700"
-              }`}
-            >
-              All
-            </button>
-          </div>
-        </div>
-        {loading && <p>Loading...</p>}
+        <h2 className="text-xl font-bold mb-4">Your Plans</h2>
+        {loading && <p>Loading plans...</p>}
         {error && <p className="text-red-500">{error}</p>}
         {!loading && !error && (
-          <ul className="space-y-3">
-            {filteredTasks.length > 0 ? (
-              filteredTasks.map((task) => (
-                <li
-                  key={task.id}
-                  className="bg-gray-700 p-4 rounded-md flex justify-between items-center"
-                >
-                  <div>
-                    <span>{task.title}</span>
-                    {task.dueDate && (
-                      <p className="text-xs text-gray-400 mt-1">
-                        Due: {new Date(task.dueDate).toLocaleDateString()}
-                      </p>
-                    )}
-                  </div>
-                  <span
-                    className={`px-3 py-1 text-xs rounded-full ${
-                      task.status === "planned"
-                        ? "bg-green-500/20 text-green-300"
-                        : "bg-yellow-500/20 text-yellow-300"
-                    }`}
-                  >
-                    {task.status}
+          <div className="space-y-4">
+            {plans.length > 0 ? plans.map(plan => (
+              <div key={plan.id} className="bg-gray-700 p-4 rounded-md flex flex-col sm:flex-row justify-between items-start sm:items-center">
+                <div className="flex-grow mb-4 sm:mb-0">
+                  <p className="font-bold text-lg">{plan.title}</p>
+                  <a href={plan.video_url} target="_blank" rel="noopener noreferrer" className="text-sm text-blue-400 hover:underline truncate block">{plan.video_url}</a>
+                  <p className="text-xs text-gray-400 mt-1">
+                    Scheduled for: {new Date(plan.process_time).toLocaleString()}
+                  </p>
+                </div>
+                <div className="flex items-center space-x-4 w-full sm:w-auto">
+                   <span className={`px-3 py-1 text-xs rounded-full ${getStatusChip(plan.status)}`}>
+                    {plan.status}
                   </span>
-                </li>
-              ))
-            ) : (
-              <p className="text-gray-500">No tasks found for this filter.</p>
-            )}
-          </ul>
+                  <span className="text-xs bg-gray-600 px-2 py-1 rounded-md">{plan.note_format}</span>
+                  <button onClick={() => openModalForEdit(plan)} className="text-sm text-blue-400 hover:underline">Edit</button>
+                  <button onClick={() => handleDeletePlan(plan.id)} className="text-sm text-red-400 hover:underline">Delete</button>
+                </div>
+              </div>
+            )) : <p className="text-gray-500 text-center py-4">You have no study plans yet.</p>}
+          </div>
         )}
       </div>
     </div>

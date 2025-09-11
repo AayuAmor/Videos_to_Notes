@@ -252,6 +252,93 @@ app.get("/api/stats", async (req, res) => {
   }
 });
 
+// Background task processor
+const processDueStudyPlans = async () => {
+  console.log('Checking for due study plans...');
+  const now = new Date().toISOString();
+  
+  db.all(`SELECT * FROM study_plans WHERE process_time <= ? AND status = 'Pending'`, [now], async (err, plans) => {
+    if (err) {
+      console.error('Error fetching due plans:', err);
+      return;
+    }
+
+    if (plans.length === 0) {
+      console.log('No due plans found.');
+      return;
+    }
+
+    for (const plan of plans) {
+      console.log(`Processing plan ID: ${plan.id} - ${plan.title}`);
+      
+      // 1. Update status to 'Processing'
+      db.run(`UPDATE study_plans SET status = 'Processing' WHERE id = ?`, plan.id);
+
+      try {
+        // 2. Generate notes (re-using the /generate logic)
+        // This is a simplified version. A real app would refactor the generation logic
+        // into a function that can be called from multiple places.
+        const { notes, quiz } = await generateContentForPlan(plan);
+
+        // 3. Save to history
+        db.run(
+          `INSERT INTO history (type, content, notes, quiz) VALUES (?, ?, ?, ?)`,
+          ['study_plan', plan.video_url, notes, JSON.stringify(quiz)]
+        );
+
+        // 4. Update status to 'Completed'
+        db.run(`UPDATE study_plans SET status = 'Completed' WHERE id = ?`, plan.id);
+        console.log(`Successfully processed and completed plan ID: ${plan.id}`);
+
+      } catch (processingError) {
+        console.error(`Failed to process plan ID: ${plan.id}`, processingError);
+        // Revert status to 'Pending' or set to 'Failed'
+        db.run(`UPDATE study_plans SET status = 'Failed' WHERE id = ?`, plan.id);
+      }
+    }
+  });
+};
+
+// Helper function to encapsulate generation logic for the background task
+async function generateContentForPlan(plan) {
+    const { video_url, note_format } = plan;
+
+    const jsonPromptStructure = `
+        Your response MUST be a valid JSON object with the following structure:
+        {
+          "notes": "A string containing detailed, well-structured study notes in ${note_format} format.",
+          "quiz": [
+            { "question": "A multiple-choice question", "options": ["Option A", "Option B", "Option C", "Option D"], "answer": "The correct option" },
+            { "question": "A short-answer question", "answer": "The correct answer" }
+          ]
+        }
+        Do not include any other text, markdown, or formatting outside of this single JSON object.
+    `;
+
+    let prompt;
+    try {
+        const transcript = await YoutubeTranscript.fetchTranscript(video_url);
+        const transcriptText = transcript.map((item) => item.text).join(" ");
+        prompt = `Based on the following transcript, generate study notes in ${note_format} format and a quiz. Transcript: "${transcriptText}" ${jsonPromptStructure}`;
+    } catch (error) {
+        console.warn(`Transcript fetch failed for ${video_url}. Falling back to multimodal.`);
+        prompt = `Directly analyze the video at ${video_url}. Generate study notes in ${note_format} format and a quiz. ${jsonPromptStructure}`;
+    }
+
+    const model = genAI.getGenerativeModel({ model: "gemini-1.5-pro-latest" });
+    const result = await model.generateContent(prompt);
+    const response = await result.response;
+    const text = await response.text();
+
+    const cleanedText = text.replace(/```json/g, "").replace(/```/g, "").trim();
+    return JSON.parse(cleanedText);
+}
+
+
+// Run the processor every minute
+setInterval(processDueStudyPlans, 60 * 1000);
+
+
 app.listen(port, () => {
   console.log(`Server listening on port ${port}`);
 });
