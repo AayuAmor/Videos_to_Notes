@@ -5,6 +5,8 @@ import multer from "multer";
 import { GoogleGenerativeAI } from "@google/generative-ai";
 import sqlite3 from "sqlite3";
 import { YoutubeTranscript } from "youtube-transcript";
+import fs from "fs";
+import path from "path";
 
 dotenv.config();
 
@@ -58,7 +60,7 @@ db.exec(dbSchema, (err) => {
 });
 
 // Google AI Studio setup
-const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
+let genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
 
 // Multer setup for file uploads
 const upload = multer({ storage: multer.memoryStorage() });
@@ -193,6 +195,40 @@ app.post("/api/generate", upload.single("file"), async (req, res) => {
     res
       .status(500)
       .json({ error: "An unexpected error occurred on the server." });
+  }
+});
+
+app.post("/api/update-api-key", (req, res) => {
+  const { apiKey } = req.body;
+
+  if (!apiKey || !apiKey.trim()) {
+    return res.status(400).json({ error: "API key cannot be empty." });
+  }
+
+  try {
+    const envPath = path.resolve(process.cwd(), ".env");
+    let envFileContent = fs.readFileSync(envPath, { encoding: "utf8" });
+
+    const key = "GEMINI_API_KEY";
+    const regex = new RegExp(`^${key}=.*`, "m");
+
+    if (regex.test(envFileContent)) {
+      envFileContent = envFileContent.replace(regex, `${key}=${apiKey}`);
+    } else {
+      envFileContent += `\n${key}=${apiKey}`;
+    }
+
+    fs.writeFileSync(envPath, envFileContent);
+
+    // Re-initialize the GoogleGenerativeAI instance with the new key
+    process.env.GEMINI_API_KEY = apiKey;
+    genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
+
+    console.log("Successfully updated and re-initialized API Key.");
+    res.json({ message: "API Key updated successfully!" });
+  } catch (error) {
+    console.error("Failed to update .env file:", error);
+    res.status(500).json({ error: "Failed to update API key on the server." });
   }
 });
 

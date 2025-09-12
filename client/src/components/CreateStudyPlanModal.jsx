@@ -1,12 +1,14 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useContext } from "react";
 import DatePicker from "react-datepicker";
 import "react-datepicker/dist/react-datepicker.css";
+import { ErrorContext } from "../App";
 
 const CreateStudyPlanModal = ({ isOpen, onClose, onSave, existingPlan }) => {
   const [title, setTitle] = useState("");
   const [videoUrl, setVideoUrl] = useState("");
   const [processTime, setProcessTime] = useState(new Date());
   const [noteFormat, setNoteFormat] = useState("Summary");
+  const { fetchWith429Handling, setError } = useContext(ErrorContext);
 
   useEffect(() => {
     if (existingPlan) {
@@ -29,25 +31,38 @@ const CreateStudyPlanModal = ({ isOpen, onClose, onSave, existingPlan }) => {
 
   if (!isOpen) return null;
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
     if (!title.trim()) {
       alert("Please provide a title for the task.");
       return;
     }
 
+    const now = new Date();
     const planData = {
       id: existingPlan?.id,
       title,
       video_url: videoUrl,
       note_format: noteFormat,
-      // If processTime is in the future, it's 'Planned', otherwise 'Not Started'
-      status: processTime > new Date() ? "Planned" : "Not Started",
-      process_time: processTime > new Date() ? processTime.toISOString() : null,
+      status: processTime > now ? "Planned" : "Not Started",
+      process_time: processTime.toISOString(), // always save the selected date
     };
 
-    onSave(planData);
-    onClose();
+    try {
+      // If you POST to backend, use fetchWith429Handling
+      // await fetchWith429Handling("/api/plans", {
+      //   method: "POST",
+      //   headers: { "Content-Type": "application/json" },
+      //   body: JSON.stringify(planData),
+      // });
+
+      onSave(planData); // If onSave does not use API, this is fine
+      onClose();
+    } catch (err) {
+      setError(
+        "Failed to save study plan. Please ensure the backend server is running."
+      );
+    }
   };
 
   return (
