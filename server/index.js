@@ -438,10 +438,8 @@ async function generateContentForPlan(plan) {
     const transcriptText = transcript.map((item) => item.text).join(" ");
     prompt = `Based on the following transcript, generate study notes in ${note_format} format and a quiz. Transcript: "${transcriptText}" ${jsonPromptStructure}`;
   } catch (error) {
-    console.warn(
-      `Transcript fetch failed for ${video_url}. Falling back to multimodal.`
-    );
-    prompt = `Directly analyze the video at ${video_url}. Generate study notes in ${note_format} format and a quiz. ${jsonPromptStructure}`;
+    // If transcript fetch fails, fallback to multimodal analysis
+    prompt = `Directly analyze the video content from the provided YouTube URL (${video_url}) and generate study notes in ${note_format} format and a quiz. ${jsonPromptStructure}`;
   }
 
   try {

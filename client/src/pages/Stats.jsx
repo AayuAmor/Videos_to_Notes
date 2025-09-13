@@ -1,5 +1,5 @@
-import React, { useState, useEffect, useContext } from "react";
-import { ErrorContext } from "../App";
+import React from "react";
+import { useLocalTasks } from "../useLocalTasks";
 import {
   LineChart,
   Line,
@@ -62,78 +62,33 @@ const StatCard = ({ title, value, icon: Icon, color }) => (
 );
 
 const StatsDashboard = () => {
-  const [tasks, setTasks] = useState([]);
-  const { fetchWith429Handling, setError, error } = useContext(ErrorContext);
+  const { tasks, history } = useLocalTasks();
 
-  useEffect(() => {
-    const fetchStats = async () => {
-      try {
-        const res = await fetchWith429Handling("/api/stats");
-        if (!res.ok) throw new Error("Failed to fetch stats");
-        const contentType = res.headers.get("content-type");
-        if (!contentType || !contentType.includes("application/json")) {
-          throw new Error(
-            "Backend did not return JSON. Is the server running on port 5000?"
-          );
-        }
-        const data = await res.json();
-        setTasks(data);
-      } catch (err) {
-        setError(
-          "Error fetching stats: " +
-            err.message +
-            " Please ensure the backend server is running on port 5000."
-        );
-      }
-    };
-
-    fetchStats();
-  }, [fetchWith429Handling, setError]);
-
-  // --- Real stats based on user records ---
-  const now = new Date();
-  // Planned: tasks with process_time in future
-  const plannedTasks = tasks.filter(
-    (task) => task.process_time && new Date(task.process_time) > now
-  );
-  // Completed: tasks with status === "completed"
-  const completedTasks = tasks.filter((task) => task.status === "completed");
-  // Uncompleted: tasks with status !== "completed"
-  const uncompletedTasks = tasks.filter((task) => task.status !== "completed");
-  // Unplanned: tasks with no process_time or process_time in past
-  const unplannedTasks = tasks.filter(
-    (task) => !task.process_time || new Date(task.process_time) <= now
-  );
-
-  // Notes generated: count of tasks with notes
-  const notesGenerated = tasks.filter(
-    (task) => task.notes && task.notes.length > 0
+  // --- Stats calculated from local data ---
+  const notesGenerated = history.filter(
+    (h) => h.notes && h.notes.length > 0
   ).length;
-
-  // Study time (dummy: sum of durations for completed tasks this week)
-  const studyTime = completedTasks.reduce((sum, task) => {
-    // Assume task.duration is in hours, and task.completed_at is this week
-    if (
-      task.duration &&
-      task.completed_at &&
-      new Date(task.completed_at) >=
-        new Date(now.getFullYear(), now.getMonth(), now.getDate() - 7)
-    ) {
-      return sum + task.duration;
-    }
-    return sum;
-  }, 0);
-
-  // Completion rate
+  const studyTime = "-"; // Not tracked locally
+  const plannedTasks = tasks.filter(
+    (task) =>
+      task.status === "Pending" ||
+      task.status === "Not Started" ||
+      (task.process_time && new Date(task.process_time) > new Date())
+  );
+  const completedTasks = tasks.filter((task) => task.status === "Completed");
+  const unplannedTasks = history.filter(
+    (h) => !tasks.some((t) => t.video_url === h.content)
+  ).length;
+  const incompleteTasks = tasks.filter(
+    (task) => task.status !== "Completed" && task.status !== "Failed"
+  ).length;
   const completionRate =
     tasks.length > 0
       ? Math.round((completedTasks.length / tasks.length) * 100)
       : 0;
-
-  // Planned vs Completed
   const plannedVsCompleted = `${completedTasks.length}/${plannedTasks.length}`;
 
-  // Topic distribution (dummy: group by task.topic)
+  // Topic distribution (group by task.topic)
   const topicMap = {};
   tasks.forEach((task) => {
     const topic = task.topic || "Other";
@@ -144,6 +99,7 @@ const StatsDashboard = () => {
   );
 
   // Productivity trend (count completed tasks per day this week)
+  const now = new Date();
   const trendData = days.map((day, idx) => {
     // Find date for this day
     const date = new Date(
@@ -160,7 +116,7 @@ const StatsDashboard = () => {
         d.getFullYear() === date.getFullYear()
       );
     }).length;
-    return { day, hours: count }; // hours is count for demo
+    return { day, hours: count };
   });
 
   // Heatmap (count tasks per day for last 4 weeks)
@@ -179,17 +135,7 @@ const StatsDashboard = () => {
           d.getMonth() === date.getMonth() &&
           d.getFullYear() === date.getFullYear()
         );
-      }).length > 1
-        ? 2
-        : tasks.filter((task) => {
-            if (!task.completed_at) return false;
-            const d = new Date(task.completed_at);
-            return (
-              d.getDate() === date.getDate() &&
-              d.getMonth() === date.getMonth() &&
-              d.getFullYear() === date.getFullYear()
-            );
-          }).length;
+      }).length;
     })
   );
 
@@ -270,6 +216,18 @@ const StatsDashboard = () => {
           value={plannedVsCompleted}
           icon={ListChecks}
           color="text-yellow-500"
+        />
+        <StatCard
+          title="Unplanned Tasks"
+          value={unplannedTasks}
+          icon={Clock}
+          color="text-red-500"
+        />
+        <StatCard
+          title="Incomplete Tasks"
+          value={incompleteTasks}
+          icon={Clock}
+          color="text-orange-500"
         />
       </div>
 
@@ -392,7 +350,7 @@ const StatsDashboard = () => {
           </div>
         </CardContent>
       </Card>
-      {error && <p className="text-red-600 font-bold mt-4">{error}</p>}
+      {/* No error message needed, all local */}
     </div>
   );
 };
