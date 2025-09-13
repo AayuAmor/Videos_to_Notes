@@ -35,27 +35,29 @@ const Planner = () => {
     setIsModalOpen(true);
   };
 
-  // Planned: has process_time in future or status is Planned/Pending
-  // Unplanned: no process_time or status is Not Started
-  // Completed: status === "Completed"
-  // Incomplete: status !== "Completed"
-  const plannedPlans = tasks.filter((task) => {
-    if (task.status === "Completed") return false;
-    if (task.process_time) {
-      const pt = new Date(task.process_time);
-      if (pt > new Date()) return true;
-    }
-    return task.status === "Planned" || task.status === "Pending";
-  });
-  const unplannedPlans = tasks.filter((task) => {
-    if (task.status === "Completed") return false;
-    if (!task.process_time) return true;
-    return (
-      task.status === "Not Started" || new Date(task.process_time) <= new Date()
-    );
-  });
-  const completedPlans = tasks.filter((task) => task.status === "Completed");
-  const incompletePlans = tasks.filter((task) => task.status !== "Completed");
+  // Unplanned: no process_time and status is "Not Started"
+  const unplannedPlans = tasks.filter(
+    (task) => !task.process_time && task.status === "Not Started"
+  );
+
+  // Planned: has process_time and status is "Planned" or "Pending"
+  const plannedPlans = tasks.filter(
+    (task) =>
+      task.process_time &&
+      (task.status === "Planned" || task.status === "Pending")
+  );
+
+  // Incomplete: planned tasks that are not completed
+  const incompletePlans = tasks.filter(
+    (task) =>
+      task.process_time &&
+      (task.status === "Planned" || task.status === "Pending")
+  );
+
+  // Complete: has process_time and status is "Completed"
+  const completedPlans = tasks.filter(
+    (task) => task.process_time && task.status === "Completed"
+  );
 
   // Mark complete/incomplete handlers
   const markComplete = (id) => {
@@ -116,16 +118,10 @@ const Planner = () => {
                     Edit
                   </button>
                   <button
-                    onClick={() => markComplete(plan.id)}
+                    onClick={() => openModalForEdit(plan)}
                     className="text-sm bg-blue-600 px-4 py-2 rounded-md hover:bg-blue-700"
                   >
-                    Mark Complete
-                  </button>
-                  <button
-                    onClick={() => markIncomplete(plan.id)}
-                    className="text-sm bg-yellow-600 px-4 py-2 rounded-md hover:bg-yellow-700"
-                  >
-                    Mark Incomplete
+                    Plan Task
                   </button>
                   <button
                     onClick={() => handleDeletePlan(plan.id)}

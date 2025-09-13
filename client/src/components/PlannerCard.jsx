@@ -1,32 +1,22 @@
-import React, { useState, useEffect } from "react";
+import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
+import { useLocalTasks } from "../useLocalTasks";
 
 const PlannerCard = () => {
-  const [plans, setPlans] = useState([]);
+  const { tasks } = useLocalTasks();
   const [filter, setFilter] = useState("All");
   const navigate = useNavigate();
 
-  useEffect(() => {
-    const fetchPlans = async () => {
-      try {
-        const response = await fetch("http://localhost:8080/api/study-plans");
-        if (!response.ok) {
-          throw new Error("Failed to fetch study plans");
-        }
-        const data = await response.json();
-        setPlans(data);
-      } catch (error) {
-        console.error("Error fetching study plans:", error);
-      }
-    };
-
-    fetchPlans();
-  }, []);
-
-  const filteredPlans = plans.filter((plan) => {
+  const filteredPlans = tasks.filter((plan) => {
     if (filter === "All") return true;
-    if (filter === "Planned") return plan.status === "Planned";
-    if (filter === "Unplanned") return plan.status === "Not Started";
+    if (filter === "Unplanned") {
+      // Unplanned: no url and no process_time
+      return !plan.video_url && !plan.process_time;
+    }
+    if (filter === "Planned") {
+      // Planned: has url or process_time
+      return plan.video_url || plan.process_time;
+    }
     return true;
   });
 

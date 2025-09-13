@@ -38,15 +38,31 @@ const CreateStudyPlanModal = ({ isOpen, onClose, onSave, existingPlan }) => {
       return;
     }
 
-    const now = new Date();
-    const planData = {
-      id: existingPlan?.id,
-      title,
-      video_url: videoUrl,
-      note_format: noteFormat,
-      status: processTime > now ? "Planned" : "Not Started",
-      process_time: processTime.toISOString(), // always save the selected date
-    };
+    let planData;
+    // Only treat as planned if user actually enters a URL or picks a date different from default
+    const isDefaultDate =
+      !existingPlan &&
+      processTime &&
+      processTime.toDateString() === new Date().toDateString();
+    if (!videoUrl && (!processTime || isDefaultDate)) {
+      // Unplanned: no date and no URL
+      planData = {
+        id: existingPlan?.id,
+        title,
+        note_format: noteFormat,
+        status: "Not Started",
+      };
+    } else {
+      // Planned: has date or URL
+      planData = {
+        id: existingPlan?.id,
+        title,
+        video_url: videoUrl,
+        note_format: noteFormat,
+        status: "Planned",
+        process_time: processTime ? processTime.toISOString() : undefined,
+      };
+    }
 
     try {
       // If you POST to backend, use fetchWith429Handling
