@@ -219,34 +219,34 @@ const StatsDashboard = () => {
 
       {/* Summary Highlights */}
       <div className="flex flex-wrap gap-6 mb-12">
-        <div className="flex-1 min-w-[220px] bg-gradient-to-br from-indigo-700 to-blue-600 rounded-3xl p-8 shadow-lg text-white flex flex-col items-start justify-center hover:scale-105 transition-transform">
+        <div className="flex-1 min-w-[220px] bg-gradient-to-br from-indigo-700 to-blue-600 rounded-3xl p-8 shadow-lg text-white flex flex-col items-start justify-center hover:scale-105 transition-transform border border-gray-200 dark:border-none">
           <Clock className="w-8 h-8 mb-2 opacity-80" />
           <div className="text-4xl font-extrabold">{stats.totalStudyTime}h</div>
           <div className="text-lg font-medium mt-1">Total Study Time</div>
         </div>
-        <div className="flex-1 min-w-[220px] bg-gradient-to-br from-green-400 to-green-600 rounded-3xl p-8 shadow-lg text-white flex flex-col items-start justify-center hover:scale-105 transition-transform">
+        <div className="flex-1 min-w-[220px] bg-gradient-to-br from-green-400 to-green-600 rounded-3xl p-8 shadow-lg text-white flex flex-col items-start justify-center hover:scale-105 transition-transform border border-gray-200 dark:border-none">
           <FileText className="w-8 h-8 mb-2 opacity-80" />
           <div className="text-4xl font-extrabold">{notesGenerated}</div>
           <div className="text-lg font-medium mt-1">Notes Generated</div>
         </div>
-        <div className="flex-1 min-w-[220px] bg-gradient-to-br from-pink-500 to-purple-600 rounded-3xl p-8 shadow-lg text-white flex flex-col items-start justify-center hover:scale-105 transition-transform">
+        <div className="flex-1 min-w-[220px] bg-gradient-to-br from-pink-500 to-purple-600 rounded-3xl p-8 shadow-lg text-white flex flex-col items-start justify-center hover:scale-105 transition-transform border border-gray-200 dark:border-none">
           <PlayCircle className="w-8 h-8 mb-2 opacity-80" />
           <div className="text-4xl font-extrabold">{videoCompletionRate}%</div>
           <div className="text-lg font-medium mt-1">Video Completion Rate</div>
         </div>
-        <div className="flex-1 min-w-[220px] bg-gradient-to-br from-yellow-400 to-yellow-600 rounded-3xl p-8 shadow-lg text-black flex flex-col items-start justify-center hover:scale-105 transition-transform">
+        <div className="flex-1 min-w-[220px] bg-gradient-to-br from-yellow-400 to-yellow-600 rounded-3xl p-8 shadow-lg text-black flex flex-col items-start justify-center hover:scale-105 transition-transform border border-gray-200 dark:border-none">
           <ListChecks className="w-8 h-8 mb-2 opacity-80" />
           <div className="text-4xl font-extrabold">
             {stats.completed}/{stats.planned}
           </div>
           <div className="text-lg font-medium mt-1">Planned vs Completed</div>
         </div>
-        <div className="flex-1 min-w-[220px] bg-gradient-to-br from-red-400 to-red-600 rounded-3xl p-8 shadow-lg text-white flex flex-col items-start justify-center hover:scale-105 transition-transform">
+        <div className="flex-1 min-w-[220px] bg-gradient-to-br from-red-400 to-red-600 rounded-3xl p-8 shadow-lg text-white flex flex-col items-start justify-center hover:scale-105 transition-transform border border-gray-200 dark:border-none">
           <ListChecks className="w-8 h-8 mb-2 opacity-80" />
           <div className="text-4xl font-extrabold">{stats.unplanned}</div>
           <div className="text-lg font-medium mt-1">Unplanned Tasks</div>
         </div>
-        <div className="flex-1 min-w-[220px] bg-gradient-to-br from-orange-400 to-orange-600 rounded-3xl p-8 shadow-lg text-white flex flex-col items-start justify-center hover:scale-105 transition-transform">
+        <div className="flex-1 min-w-[220px] bg-gradient-to-br from-orange-400 to-orange-600 rounded-3xl p-8 shadow-lg text-white flex flex-col items-start justify-center hover:scale-105 transition-transform border border-gray-200 dark:border-none">
           <Clock className="w-8 h-8 mb-2 opacity-80" />
           <div className="text-4xl font-extrabold">{stats.incomplete}</div>
           <div className="text-lg font-medium mt-1">Incomplete Tasks</div>
@@ -254,7 +254,7 @@ const StatsDashboard = () => {
       </div>
 
       {/* Streaks & Badges Section - prominent */}
-      <div className="mb-12 flex flex-col md:flex-row gap-8 items-center justify-between bg-gradient-to-r from-purple-700 to-indigo-700 rounded-3xl p-8 shadow-lg">
+      <div className="mb-12 flex flex-col md:flex-row gap-8 items-center justify-between bg-gradient-to-r from-purple-700 to-indigo-700 rounded-3xl p-8 shadow-lg border border-gray-200 dark:border-none">
         <div className="flex items-center gap-4">
           <Flame className="w-10 h-10 text-orange-400" />
           <span className="text-3xl font-bold text-white">
@@ -284,7 +284,7 @@ const StatsDashboard = () => {
       {/* Charts Section - graphical comparison and trends */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 mb-8">
         {/* Bar Chart: Graphical Comparison of Tasks */}
-        <div className="rounded-2xl shadow-md hover:shadow-lg transition-shadow bg-white dark:bg-gray-800">
+        <div className="rounded-2xl shadow-md hover:shadow-lg transition-shadow bg-white dark:bg-gray-800 border border-gray-200 dark:border-none">
           <div className="px-6 pt-6 pb-2">
             <div className="font-semibold text-lg">
               Task Category Comparison
@@ -303,7 +303,7 @@ const StatsDashboard = () => {
           </div>
         </div>
         {/* Line Chart: Productivity Trend */}
-        <div className="rounded-2xl shadow-md hover:shadow-lg transition-shadow bg-white dark:bg-gray-800">
+        <div className="rounded-2xl shadow-md hover:shadow-lg transition-shadow bg-white dark:bg-gray-800 border border-gray-200 dark:border-none">
           <div className="px-6 pt-6 pb-2">
             <div className="font-semibold text-lg">Productivity Trend</div>
           </div>
@@ -326,7 +326,7 @@ const StatsDashboard = () => {
           </div>
         </div>
         {/* Pie Chart: Topic Distribution */}
-        <div className="rounded-2xl shadow-md hover:shadow-lg transition-shadow bg-white dark:bg-gray-800">
+        <div className="rounded-2xl shadow-md hover:shadow-lg transition-shadow bg-white dark:bg-gray-800 border border-gray-200 dark:border-none">
           <div className="px-6 pt-6 pb-2">
             <div className="font-semibold text-lg">Topic Distribution</div>
           </div>
@@ -357,7 +357,7 @@ const StatsDashboard = () => {
       </div>
 
       {/* Heatmap Section - keep modern look */}
-      <div className="rounded-2xl shadow-md hover:shadow-lg transition-shadow mb-8 bg-white dark:bg-gray-800">
+      <div className="rounded-2xl shadow-md hover:shadow-lg transition-shadow mb-8 bg-white dark:bg-gray-800 border border-gray-200 dark:border-none">
         <div className="px-6 pt-6 pb-2">
           <div className="font-semibold text-lg">Daily Study Activity</div>
         </div>

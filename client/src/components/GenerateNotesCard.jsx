@@ -27,11 +27,9 @@ const GenerateNotesCard = () => {
       });
 
       if (!response.ok) {
-        const errorData = await response
-          .json()
-          .catch(() => ({
-            error: "Failed to generate notes. Please check the server logs.",
-          }));
+        const errorData = await response.json().catch(() => ({
+          error: "Failed to generate notes. Please check the server logs.",
+        }));
         throw new Error(errorData.error || "Network response was not ok");
       }
 
@@ -46,13 +44,13 @@ const GenerateNotesCard = () => {
   };
 
   return (
-    <div className="bg-gray-800 p-6 rounded-lg w-full mt-8">
+    <div className="p-6 rounded-lg w-full mt-8 bg-white dark:bg-gray-800 text-gray-900 dark:text-white border border-gray-200 dark:border-none shadow">
       <h2 className="text-xl font-bold mb-4">Generate Notes</h2>
       <div className="flex flex-col space-y-4">
         <input
           type="text"
           placeholder="Paste a YouTube URL here"
-          className="bg-gray-700 p-3 rounded-md border border-gray-600 focus:outline-none focus:ring-2 focus:ring-blue-500"
+          className="p-3 rounded-md border focus:outline-none focus:ring-2 focus:ring-blue-500 bg-gray-100 dark:bg-gray-700 text-gray-900 dark:text-white border-gray-300 dark:border-gray-600"
           value={youtubeUrl}
           onChange={(e) => setYoutubeUrl(e.target.value)}
           disabled={loading}
@@ -60,8 +58,10 @@ const GenerateNotesCard = () => {
         <div className="flex items-center justify-center w-full">
           <label
             htmlFor="dropzone-file"
-            className={`flex flex-col items-center justify-center w-full h-32 border-2 border-gray-600 border-dashed rounded-lg cursor-pointer ${
-              loading ? "bg-gray-800" : "bg-gray-700 hover:bg-gray-600"
+            className={`flex flex-col items-center justify-center w-full h-32 border-2 border-dashed rounded-lg cursor-pointer ${
+              loading
+                ? "bg-gray-100 dark:bg-gray-800"
+                : "bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600"
             }`}
           >
             <div className="flex flex-col items-center justify-center pt-5 pb-6">
@@ -80,7 +80,7 @@ const GenerateNotesCard = () => {
                   d="M13 13h3a3 3 0 0 0 0-6h-.025A5.56 5.56 0 0 0 16 6.5 5.5 5.5 0 0 0 5.207 5.021C5.137 5.017 5.071 5 5 5a4 4 0 0 0 0 8h2.167M10 15V6m0 0L8 8m2-2 2 2"
                 />
               </svg>
-              <p className="mb-2 text-sm text-gray-500 dark:text-gray-400">
+              <p className="mb-2 text-sm text-gray-500 dark:text-gray-400 text-gray-500 dark:text-gray-400">
                 {file ? (
                   `File: ${file.name}`
                 ) : (
@@ -90,7 +90,7 @@ const GenerateNotesCard = () => {
                   </>
                 )}
               </p>
-              <p className="text-xs text-gray-500 dark:text-gray-400">
+              <p className="text-xs text-gray-500 dark:text-gray-400 text-gray-500 dark:text-gray-400">
                 Audio or Video file
               </p>
             </div>

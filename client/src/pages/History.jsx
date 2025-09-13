@@ -34,12 +34,15 @@ const History = () => {
   }
 
   return (
-    <div>
+    <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
       <h1 className="text-3xl font-bold mb-8">Generation History</h1>
       <div className="space-y-6">
         {history.length > 0 ? (
           history.map((item) => (
-            <div key={item.id} className="bg-gray-800 p-6 rounded-lg shadow-md">
+            <div
+              key={item.id}
+              className="p-6 rounded-lg shadow border border-gray-200 dark:border-none rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white"
+            >
               <div className="flex justify-between items-center mb-4">
                 <p className="text-sm text-gray-400">
                   <span className="font-bold capitalize">{item.type}: </span>
@@ -58,11 +61,11 @@ const History = () => {
               </div>
               <div>
                 <h3 className="text-lg font-bold mb-2">Notes:</h3>
-                <p className="bg-gray-700 p-3 rounded-md text-sm mb-4">
+                <p className="p-3 rounded-md text-sm mb-4 bg-gray-100 dark:bg-gray-700 text-gray-900 dark:text-white">
                   {item.notes}
                 </p>
                 <h3 className="text-lg font-bold mb-2">Quiz:</h3>
-                <div className="bg-gray-700 p-3 rounded-md text-sm">
+                <div className="p-3 rounded-md text-sm bg-gray-100 dark:bg-gray-700 text-gray-900 dark:text-white">
                   {JSON.parse(item.quiz).map((q, index) => (
                     <div key={index} className="mb-3">
                       <p className="font-semibold">

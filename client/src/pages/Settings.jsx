@@ -38,7 +38,7 @@ const Settings = () => {
   };
 
   return (
-    <div className="text-gray-800 dark:text-gray-200">
+    <div className="min-h-screen bg-gray-50 dark:bg-gray-900 text-gray-800 dark:text-gray-200">
       <h1 className="text-3xl font-bold mb-8">Settings</h1>
       <div className="bg-white dark:bg-gray-800 p-8 rounded-lg shadow-md">
         <h2 className="text-2xl font-bold mb-6">Application Settings</h2>

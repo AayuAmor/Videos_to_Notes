@@ -1,4 +1,6 @@
 import React, { createContext, useState, useContext } from "react";
+import { ThemeProvider } from "./contexts/ThemeContext";
+import ThemeWrapper from "./components/ThemeWrapper";
 import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
 import Sidebar from "./components/Sidebar";
 import Dashboard from "./pages/Dashboard";
@@ -28,40 +30,46 @@ function App() {
   };
 
   return (
-    <ErrorContext.Provider value={{ error, setError, fetchWith429Handling }}>
-      <Router
-        future={{
-          v7_startTransition: true,
-          v7_relativeSplatPath: true,
-        }}
-      >
-        <div className="flex">
-          <Sidebar />
-          <main className="flex-grow p-8">
-            {error && (
-              <div className="bg-red-100 text-red-700 p-2 mb-4 rounded">
-                {error}
-              </div>
-            )}
-            <Routes>
-              <Route path="/" element={<Dashboard />} />
-              <Route path="/planner" element={<Planner />} />
-              <Route
-                path="/stats"
-                element={
-                  <ErrorBoundary>
-                    <Stats />
-                  </ErrorBoundary>
-                }
-              />
-              <Route path="/user" element={<User />} />
-              <Route path="/history" element={<History />} />
-              <Route path="/settings" element={<Settings />} />
-            </Routes>
-          </main>
-        </div>
-      </Router>
-    </ErrorContext.Provider>
+    <ThemeProvider>
+      <ThemeWrapper>
+        <ErrorContext.Provider
+          value={{ error, setError, fetchWith429Handling }}
+        >
+          <Router
+            future={{
+              v7_startTransition: true,
+              v7_relativeSplatPath: true,
+            }}
+          >
+            <div className="flex">
+              <Sidebar />
+              <main className="flex-grow p-8 ml-20">
+                {error && (
+                  <div className="bg-red-100 text-red-700 p-2 mb-4 rounded">
+                    {error}
+                  </div>
+                )}
+                <Routes>
+                  <Route path="/" element={<Dashboard />} />
+                  <Route path="/planner" element={<Planner />} />
+                  <Route
+                    path="/stats"
+                    element={
+                      <ErrorBoundary>
+                        <Stats />
+                      </ErrorBoundary>
+                    }
+                  />
+                  <Route path="/user" element={<User />} />
+                  <Route path="/history" element={<History />} />
+                  <Route path="/settings" element={<Settings />} />
+                </Routes>
+              </main>
+            </div>
+          </Router>
+        </ErrorContext.Provider>
+      </ThemeWrapper>
+    </ThemeProvider>
   );
 }
 

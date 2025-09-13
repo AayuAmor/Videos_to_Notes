@@ -68,7 +68,7 @@ const Planner = () => {
   return (
     <div>
       <h1 className="text-3xl font-bold mb-8">Study Planner</h1>
-      <div className="bg-gray-800 p-6 rounded-lg shadow-md mb-8 flex justify-between items-center">
+      <div className="p-6 rounded-lg shadow border border-gray-200 dark:border-none mb-8 flex justify-between items-center bg-white dark:bg-gray-800 text-gray-900 dark:text-white">
         <h2 className="text-xl font-bold">Manage Your Study Plans</h2>
         <button
           onClick={openModalForNew}
@@ -86,14 +86,14 @@ const Planner = () => {
       />
 
       {/* Unplanned Tasks Section */}
-      <div className="bg-gray-800 p-6 rounded-lg shadow-md mb-8">
+      <div className="p-6 rounded-lg shadow border border-gray-200 dark:border-none mb-8 bg-white dark:bg-gray-800 text-gray-900 dark:text-white">
         <h2 className="text-xl font-bold mb-4">Unplanned Tasks</h2>
         <div className="space-y-4">
           {unplannedPlans.length > 0 ? (
             unplannedPlans.map((plan) => (
               <div
                 key={plan.id}
-                className="bg-gray-700 p-4 rounded-md flex flex-col sm:flex-row justify-between items-start sm:items-center"
+                className="p-4 rounded-md flex flex-col sm:flex-row justify-between items-start sm:items-center bg-gray-100 dark:bg-gray-700 text-gray-900 dark:text-white"
               >
                 <div className="flex-grow mb-4 sm:mb-0">
                   <p className="font-bold text-lg">{plan.title}</p>
@@ -138,14 +138,14 @@ const Planner = () => {
         </div>
       </div>
       {/* Planned Tasks Section */}
-      <div className="bg-gray-800 p-6 rounded-lg shadow-md mb-8">
+      <div className="p-6 rounded-lg shadow border border-gray-200 dark:border-none mb-8 bg-white dark:bg-gray-800 text-gray-900 dark:text-white">
         <h2 className="text-xl font-bold mb-4">Planned Tasks</h2>
         <div className="space-y-4">
           {plannedPlans.length > 0 ? (
             plannedPlans.map((plan) => (
               <div
                 key={plan.id}
-                className="bg-gray-700 p-4 rounded-md flex flex-col sm:flex-row justify-between items-start sm:items-center"
+                className="p-4 rounded-md flex flex-col sm:flex-row justify-between items-start sm:items-center bg-gray-100 dark:bg-gray-700 text-gray-900 dark:text-white"
               >
                 <div className="flex-grow mb-4 sm:mb-0">
                   <p className="font-bold text-lg">{plan.title}</p>
@@ -196,14 +196,14 @@ const Planner = () => {
         </div>
       </div>
       {/* Incomplete Tasks Section */}
-      <div className="bg-gray-800 p-6 rounded-lg shadow-md mb-8">
+      <div className="p-6 rounded-xl shadow-lg border border-gray-200 dark:border-gray-900 mb-8 bg-white dark:bg-gray-800 text-gray-900 dark:text-white">
         <h2 className="text-xl font-bold mb-4">Incomplete Tasks</h2>
         <div className="space-y-4">
           {incompletePlans.length > 0 ? (
             incompletePlans.map((plan) => (
               <div
                 key={plan.id}
-                className="bg-gray-700 p-4 rounded-md flex flex-col sm:flex-row justify-between items-start sm:items-center"
+                className="p-4 rounded-lg flex flex-col sm:flex-row justify-between items-start sm:items-center bg-gray-100 dark:bg-gray-700 text-gray-900 dark:text-white shadow-sm mb-2"
               >
                 <div className="flex-grow mb-4 sm:mb-0">
                   <p className="font-bold text-lg">{plan.title}</p>
@@ -212,34 +212,34 @@ const Planner = () => {
                       href={plan.video_url}
                       target="_blank"
                       rel="noopener noreferrer"
-                      className="text-sm text-blue-400 hover:underline truncate block"
+                      className="text-sm text-blue-300 hover:underline truncate block"
                     >
                       {plan.video_url}
                     </a>
                   )}
                 </div>
-                <div className="flex items-center space-x-4 w-full sm:w-auto">
+                <div className="flex items-center space-x-2 w-full sm:w-auto">
                   <button
                     onClick={() => openModalForEdit(plan)}
-                    className="text-sm bg-green-600 px-4 py-2 rounded-md hover:bg-green-700"
+                    className="text-sm bg-green-500 hover:bg-green-600 text-white px-4 py-2 rounded-lg shadow transition-colors"
                   >
                     Edit
                   </button>
                   <button
                     onClick={() => markComplete(plan.id)}
-                    className="text-sm bg-blue-600 px-4 py-2 rounded-md hover:bg-blue-700"
+                    className="text-sm bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded-lg shadow transition-colors"
                   >
                     Mark Complete
                   </button>
                   <button
                     onClick={() => markIncomplete(plan.id)}
-                    className="text-sm bg-yellow-600 px-4 py-2 rounded-md hover:bg-yellow-700"
+                    className="text-sm bg-blue-400 hover:bg-blue-500 text-white px-4 py-2 rounded-lg shadow transition-colors"
                   >
                     Mark Incomplete
                   </button>
                   <button
                     onClick={() => handleDeletePlan(plan.id)}
-                    className="text-sm text-red-400 hover:underline"
+                    className="text-sm bg-red-100 text-red-600 px-4 py-2 rounded-lg shadow hover:bg-red-200 transition-colors"
                   >
                     Delete
                   </button>
@@ -247,21 +247,21 @@ const Planner = () => {
               </div>
             ))
           ) : (
-            <p className="text-gray-500 text-center py-4">
+            <p className="text-gray-400 text-center py-4">
               You have no incomplete tasks.
             </p>
           )}
         </div>
       </div>
       {/* Completed Tasks Section */}
-      <div className="bg-gray-800 p-6 rounded-lg shadow-md">
+      <div className="p-6 rounded-xl shadow-lg border border-gray-200 dark:border-gray-900 bg-white dark:bg-gray-800 text-gray-900 dark:text-white">
         <h2 className="text-xl font-bold mb-4">Completed Tasks</h2>
         <div className="space-y-4">
           {completedPlans.length > 0 ? (
             completedPlans.map((plan) => (
               <div
                 key={plan.id}
-                className="bg-gray-700 p-4 rounded-md flex flex-col sm:flex-row justify-between items-start sm:items-center"
+                className="p-4 rounded-lg flex flex-col sm:flex-row justify-between items-start sm:items-center bg-gray-100 dark:bg-gray-700 text-gray-900 dark:text-white shadow-sm mb-2"
               >
                 <div className="flex-grow mb-4 sm:mb-0">
                   <p className="font-bold text-lg">{plan.title}</p>
@@ -270,28 +270,28 @@ const Planner = () => {
                       href={plan.video_url}
                       target="_blank"
                       rel="noopener noreferrer"
-                      className="text-sm text-blue-400 hover:underline truncate block"
+                      className="text-sm text-blue-300 hover:underline truncate block"
                     >
                       {plan.video_url}
                     </a>
                   )}
                 </div>
-                <div className="flex items-center space-x-4 w-full sm:w-auto">
+                <div className="flex items-center space-x-2 w-full sm:w-auto">
                   <button
                     onClick={() => openModalForEdit(plan)}
-                    className="text-sm bg-green-600 px-4 py-2 rounded-md hover:bg-green-700"
+                    className="text-sm bg-green-500 hover:bg-green-600 text-white px-4 py-2 rounded-lg shadow transition-colors"
                   >
                     Edit
                   </button>
                   <button
                     onClick={() => markIncomplete(plan.id)}
-                    className="text-sm bg-yellow-600 px-4 py-2 rounded-md hover:bg-yellow-700"
+                    className="text-sm bg-blue-400 hover:bg-blue-500 text-white px-4 py-2 rounded-lg shadow transition-colors"
                   >
                     Mark Incomplete
                   </button>
                   <button
                     onClick={() => handleDeletePlan(plan.id)}
-                    className="text-sm text-red-400 hover:underline"
+                    className="text-sm bg-red-100 text-red-600 px-4 py-2 rounded-lg shadow hover:bg-red-200 transition-colors"
                   >
                     Delete
                   </button>
@@ -299,7 +299,7 @@ const Planner = () => {
               </div>
             ))
           ) : (
-            <p className="text-gray-500 text-center py-4">
+            <p className="text-gray-400 text-center py-4">
               You have no completed tasks.
             </p>
           )}

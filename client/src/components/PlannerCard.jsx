@@ -21,7 +21,7 @@ const PlannerCard = () => {
   });
 
   return (
-    <div className="bg-gray-800 p-6 rounded-lg w-full">
+    <div className="p-6 rounded-lg w-full bg-white dark:bg-gray-800 text-gray-900 dark:text-white border border-gray-200 dark:border-none shadow">
       <div className="flex justify-between items-center mb-4">
         <h2 className="text-xl font-bold">Planner</h2>
         <div className="text-sm text-gray-400">
@@ -35,25 +35,31 @@ const PlannerCard = () => {
       <div className="flex space-x-4 text-sm">
         <button
           onClick={() => setFilter("Unplanned")}
-          className={`${
-            filter === "Unplanned" ? "bg-blue-600" : "bg-gray-700"
-          } px-4 py-2 rounded-md`}
+          className={`px-4 py-2 rounded-md font-semibold transition-colors ${
+            filter === "Unplanned"
+              ? "bg-blue-600 text-white"
+              : "bg-gray-200 text-gray-900 dark:bg-gray-700 dark:text-white"
+          }`}
         >
           Unplanned
         </button>
         <button
           onClick={() => setFilter("Planned")}
-          className={`${
-            filter === "Planned" ? "bg-blue-600" : "bg-gray-700"
-          } px-4 py-2 rounded-md`}
+          className={`px-4 py-2 rounded-md font-semibold transition-colors ${
+            filter === "Planned"
+              ? "bg-blue-600 text-white"
+              : "bg-gray-200 text-gray-900 dark:bg-gray-700 dark:text-white"
+          }`}
         >
           Planned
         </button>
         <button
           onClick={() => setFilter("All")}
-          className={`${
-            filter === "All" ? "bg-blue-600" : "bg-gray-700"
-          } px-4 py-2 rounded-md`}
+          className={`px-4 py-2 rounded-md font-semibold transition-colors ${
+            filter === "All"
+              ? "bg-blue-600 text-white"
+              : "bg-gray-200 text-gray-900 dark:bg-gray-700 dark:text-white"
+          }`}
         >
           All
         </button>
@@ -64,7 +70,7 @@ const PlannerCard = () => {
             {filteredPlans.slice(0, 5).map((plan) => (
               <li
                 key={plan.id}
-                className="bg-gray-700 p-3 rounded-md flex justify-between items-center"
+                className="p-3 rounded-md flex justify-between items-center bg-gray-100 dark:bg-gray-700 text-gray-900 dark:text-white"
               >
                 <span className="font-semibold">{plan.title}</span>
                 <span
