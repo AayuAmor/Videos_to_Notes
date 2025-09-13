@@ -8,7 +8,9 @@ const History = () => {
   useEffect(() => {
     const fetchHistory = async () => {
       try {
-        const response = await fetch("http://localhost:8080/api/history");
+        const response = await fetch(
+          `${import.meta.env.VITE_API_URL}/api/history`
+        );
         if (!response.ok) {
           throw new Error("Network response was not ok");
         }

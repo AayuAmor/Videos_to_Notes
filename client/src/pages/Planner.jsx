@@ -57,6 +57,9 @@ const Planner = () => {
       (task.video_url || task.process_time) && task.status === "Completed"
   );
 
+  // Example usage for API calls:
+  // fetch(`${import.meta.env.VITE_API_URL}/api/study-plans`)
+
   // Mark complete/incomplete handlers
   const markComplete = (id) => {
     updateTask(id, { status: "Completed" });

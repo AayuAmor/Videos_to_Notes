@@ -36,6 +36,8 @@ const features = [
 ];
 
 const FeaturesSection = () => {
+  // Example usage for API calls:
+  // fetch(`${import.meta.env.VITE_API_URL}/api/feature`)
   return (
     <div className="py-12">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">

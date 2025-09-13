@@ -21,10 +21,13 @@ const GenerateNotesCard = () => {
     }
 
     try {
-      const response = await fetch("http://localhost:8080/api/generate", {
-        method: "POST",
-        body: formData,
-      });
+      const response = await fetch(
+        `${import.meta.env.VITE_API_URL}/api/generate`,
+        {
+          method: "POST",
+          body: formData,
+        }
+      );
 
       if (!response.ok) {
         const errorData = await response.json().catch(() => ({
