@@ -35,28 +35,26 @@ const Planner = () => {
     setIsModalOpen(true);
   };
 
-  // Unplanned: no process_time and status is "Not Started"
+  // Unplanned: no video_url and no process_time
   const unplannedPlans = tasks.filter(
-    (task) => !task.process_time && task.status === "Not Started"
+    (task) => !task.video_url && !task.process_time
   );
 
-  // Planned: has process_time and status is "Planned" or "Pending"
+  // Planned: has video_url or process_time
   const plannedPlans = tasks.filter(
-    (task) =>
-      task.process_time &&
-      (task.status === "Planned" || task.status === "Pending")
+    (task) => task.video_url || task.process_time
   );
 
   // Incomplete: planned tasks that are not completed
   const incompletePlans = tasks.filter(
     (task) =>
-      task.process_time &&
-      (task.status === "Planned" || task.status === "Pending")
+      (task.video_url || task.process_time) && task.status !== "Completed"
   );
 
-  // Complete: has process_time and status is "Completed"
+  // Complete: planned tasks with status "Completed"
   const completedPlans = tasks.filter(
-    (task) => task.process_time && task.status === "Completed"
+    (task) =>
+      (task.video_url || task.process_time) && task.status === "Completed"
   );
 
   // Mark complete/incomplete handlers

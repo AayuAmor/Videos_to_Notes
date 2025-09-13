@@ -12,6 +12,8 @@ import {
   Pie,
   Cell,
   Legend,
+  BarChart,
+  Bar,
 } from "recharts";
 import {
   Flame,
@@ -21,27 +23,30 @@ import {
   PlayCircle,
   ListChecks,
 } from "lucide-react";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+// Card components replaced with inline styled divs
 
 function getStats(tasks) {
-  const now = new Date();
-  const planned = tasks.filter((task) => {
-    if (task.status === "Completed") return false;
-    if (task.process_time) {
-      const pt = new Date(task.process_time);
-      if (pt > now) return true;
-    }
-    return task.status === "Planned" || task.status === "Pending";
-  }).length;
-  const unplanned = tasks.filter((task) => {
-    if (task.status === "Completed") return false;
-    if (!task.process_time || isNaN(new Date(task.process_time).getTime()))
-      return true;
-    const pt = new Date(task.process_time);
-    return task.status === "Not Started" || pt <= now;
-  }).length;
-  const completed = tasks.filter((task) => task.status === "Completed").length;
-  const incomplete = tasks.filter((task) => task.status !== "Completed").length;
+  // Unplanned: no video_url and no process_time
+  const unplanned = tasks.filter(
+    (task) => !task.video_url && !task.process_time
+  ).length;
+
+  // Planned: has video_url or process_time
+  const planned = tasks.filter(
+    (task) => task.video_url || task.process_time
+  ).length;
+
+  // Incomplete: planned tasks that are not completed
+  const incomplete = tasks.filter(
+    (task) =>
+      (task.video_url || task.process_time) && task.status !== "Completed"
+  ).length;
+
+  // Complete: has video_url or process_time and status is "Completed"
+  const completed = tasks.filter(
+    (task) =>
+      (task.video_url || task.process_time) && task.status === "Completed"
+  ).length;
 
   // Calculate streak: count consecutive days with at least one completed task
   const completedDates = tasks
@@ -104,34 +109,73 @@ function getStats(tasks) {
   };
 }
 
-const productivityTrend = [
-  { day: "Mon", hours: 2 },
-  { day: "Tue", hours: 1.5 },
-  { day: "Wed", hours: 2.5 },
-  { day: "Thu", hours: 2 },
-  { day: "Fri", hours: 1 },
-  { day: "Sat", hours: 2 },
-  { day: "Sun", hours: 1.5 },
-];
-
-const topicDistribution = [
-  { name: "Math", value: 8 },
-  { name: "CS", value: 12 },
-  { name: "Physics", value: 6 },
-  { name: "Chemistry", value: 4 },
-  { name: "Other", value: 4 },
-];
-
 const COLORS = ["#6366F1", "#10B981", "#F59E42", "#F43F5E", "#A3E635"];
-
-const heatmapData = [
-  [1, 2, 0, 1, 2, 1, 0],
-  [2, 1, 1, 2, 1, 2, 1],
-  [0, 1, 2, 1, 0, 1, 2],
-  [1, 2, 1, 0, 2, 1, 1],
-];
-
 const days = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
+
+function getProductivityTrend(tasks) {
+  // Last 7 days
+  const now = new Date();
+  const trend = days.map((day, i) => {
+    const d = new Date(now);
+    d.setDate(now.getDate() - (6 - i));
+    const dayStart = new Date(
+      d.getFullYear(),
+      d.getMonth(),
+      d.getDate()
+    ).getTime();
+    const dayEnd = dayStart + 86400000;
+    const hours = tasks
+      .filter(
+        (t) =>
+          t.status === "Completed" &&
+          t.process_time &&
+          new Date(t.process_time).getTime() >= dayStart &&
+          new Date(t.process_time).getTime() < dayEnd
+      )
+      .reduce((sum, t) => sum + (t.duration ? Number(t.duration) : 1), 0);
+    return { day, hours };
+  });
+  return trend;
+}
+
+function getTopicDistribution(tasks) {
+  // Group by note_format (or use another property if needed)
+  const dist = {};
+  tasks.forEach((t) => {
+    const topic = t.note_format || "Other";
+    dist[topic] = (dist[topic] || 0) + 1;
+  });
+  return Object.entries(dist).map(([name, value]) => ({ name, value }));
+}
+
+function getHeatmapData(tasks) {
+  // 4 weeks, 7 days each, sessions per day
+  const now = new Date();
+  const weeks = [];
+  for (let w = 3; w >= 0; w--) {
+    const week = [];
+    for (let d = 0; d < 7; d++) {
+      const day = new Date(now);
+      day.setDate(now.getDate() - (w * 7 + (6 - d)));
+      const dayStart = new Date(
+        day.getFullYear(),
+        day.getMonth(),
+        day.getDate()
+      ).getTime();
+      const dayEnd = dayStart + 86400000;
+      const sessions = tasks.filter(
+        (t) =>
+          t.status === "Completed" &&
+          t.process_time &&
+          new Date(t.process_time).getTime() >= dayStart &&
+          new Date(t.process_time).getTime() < dayEnd
+      ).length;
+      week.push(sessions);
+    }
+    weeks.push(week);
+  }
+  return weeks;
+}
 
 function getHeatColor(val) {
   if (val === 0) return "bg-gray-200";
@@ -143,77 +187,127 @@ function getHeatColor(val) {
 const StatsDashboard = () => {
   const { tasks } = useLocalTasks();
   const stats = getStats(tasks);
+  // Data for graphical comparison bar chart
+  const comparisonData = [
+    { name: "Planned", value: stats.planned },
+    { name: "Completed", value: stats.completed },
+    { name: "Unplanned", value: stats.unplanned },
+    { name: "Incomplete", value: stats.incomplete },
+  ];
+  const productivityTrend = getProductivityTrend(tasks);
+  const topicDistribution = getTopicDistribution(tasks);
+  const heatmapData = getHeatmapData(tasks);
+  // Additional dynamic stats
+  const notesGenerated = tasks.filter(
+    (t) => t.notes && t.notes.length > 0
+  ).length;
+  const videoCompletionRate =
+    stats.planned > 0 ? Math.round((stats.completed / stats.planned) * 100) : 0;
+
+  // Completely new dashboard layout
   return (
-    <div className="max-w-6xl mx-auto px-4 py-8">
-      {/* Header */}
-      <div className="mb-8 text-center">
-        <h1 className="text-4xl font-extrabold flex items-center justify-center gap-2">
-          <span>📊</span> Study Stats
+    <div className="max-w-7xl mx-auto px-4 py-10">
+      {/* Dashboard Header */}
+      <div className="mb-10 text-left flex flex-col gap-2">
+        <h1 className="text-5xl font-black text-transparent bg-clip-text bg-gradient-to-r from-blue-500 via-purple-500 to-pink-500">
+          Study Dashboard
         </h1>
-        <p className="text-gray-500 mt-2 text-lg">
-          Your weekly study insights and achievements powered by
-          Videos-to-Notes-AI.
+        <p className="text-gray-400 text-xl">
+          Your personalized study analytics and achievements
         </p>
       </div>
 
-      {/* Stat Cards */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-        <Card className="rounded-2xl shadow-md hover:shadow-lg transition-shadow">
-          <CardHeader className="flex items-center gap-2">
-            <ListChecks className="w-6 h-6 text-yellow-500" />
-            <CardTitle className="text-lg">Planned Tasks</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <span className="text-3xl font-bold">{stats.planned}</span>
-          </CardContent>
-        </Card>
-        <Card className="rounded-2xl shadow-md hover:shadow-lg transition-shadow">
-          <CardHeader className="flex items-center gap-2">
-            <ListChecks className="w-6 h-6 text-red-500" />
-            <CardTitle className="text-lg">Unplanned Tasks</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <span className="text-3xl font-bold">{stats.unplanned}</span>
-          </CardContent>
-        </Card>
-        <Card className="rounded-2xl shadow-md hover:shadow-lg transition-shadow">
-          <CardHeader className="flex items-center gap-2">
-            <BadgeCheck className="w-6 h-6 text-green-500" />
-            <CardTitle className="text-lg">Completed Tasks</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <span className="text-3xl font-bold">{stats.completed}</span>
-          </CardContent>
-        </Card>
-        <Card className="rounded-2xl shadow-md hover:shadow-lg transition-shadow">
-          <CardHeader className="flex items-center gap-2">
-            <Clock className="w-6 h-6 text-indigo-500" />
-            <CardTitle className="text-lg">Total Study Time</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <span className="text-3xl font-bold">{stats.totalStudyTime}h</span>
-            <div className="text-gray-400 text-sm mt-1">This week</div>
-          </CardContent>
-        </Card>
-        <Card className="rounded-2xl shadow-md hover:shadow-lg transition-shadow">
-          <CardHeader className="flex items-center gap-2">
-            <Clock className="w-6 h-6 text-indigo-500" />
-            <CardTitle className="text-lg">Incomplete Tasks</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <span className="text-3xl font-bold">{stats.incomplete}</span>
-          </CardContent>
-        </Card>
+      {/* Summary Highlights */}
+      <div className="flex flex-wrap gap-6 mb-12">
+        <div className="flex-1 min-w-[220px] bg-gradient-to-br from-indigo-700 to-blue-600 rounded-3xl p-8 shadow-lg text-white flex flex-col items-start justify-center hover:scale-105 transition-transform">
+          <Clock className="w-8 h-8 mb-2 opacity-80" />
+          <div className="text-4xl font-extrabold">{stats.totalStudyTime}h</div>
+          <div className="text-lg font-medium mt-1">Total Study Time</div>
+        </div>
+        <div className="flex-1 min-w-[220px] bg-gradient-to-br from-green-400 to-green-600 rounded-3xl p-8 shadow-lg text-white flex flex-col items-start justify-center hover:scale-105 transition-transform">
+          <FileText className="w-8 h-8 mb-2 opacity-80" />
+          <div className="text-4xl font-extrabold">{notesGenerated}</div>
+          <div className="text-lg font-medium mt-1">Notes Generated</div>
+        </div>
+        <div className="flex-1 min-w-[220px] bg-gradient-to-br from-pink-500 to-purple-600 rounded-3xl p-8 shadow-lg text-white flex flex-col items-start justify-center hover:scale-105 transition-transform">
+          <PlayCircle className="w-8 h-8 mb-2 opacity-80" />
+          <div className="text-4xl font-extrabold">{videoCompletionRate}%</div>
+          <div className="text-lg font-medium mt-1">Video Completion Rate</div>
+        </div>
+        <div className="flex-1 min-w-[220px] bg-gradient-to-br from-yellow-400 to-yellow-600 rounded-3xl p-8 shadow-lg text-black flex flex-col items-start justify-center hover:scale-105 transition-transform">
+          <ListChecks className="w-8 h-8 mb-2 opacity-80" />
+          <div className="text-4xl font-extrabold">
+            {stats.completed}/{stats.planned}
+          </div>
+          <div className="text-lg font-medium mt-1">Planned vs Completed</div>
+        </div>
+        <div className="flex-1 min-w-[220px] bg-gradient-to-br from-red-400 to-red-600 rounded-3xl p-8 shadow-lg text-white flex flex-col items-start justify-center hover:scale-105 transition-transform">
+          <ListChecks className="w-8 h-8 mb-2 opacity-80" />
+          <div className="text-4xl font-extrabold">{stats.unplanned}</div>
+          <div className="text-lg font-medium mt-1">Unplanned Tasks</div>
+        </div>
+        <div className="flex-1 min-w-[220px] bg-gradient-to-br from-orange-400 to-orange-600 rounded-3xl p-8 shadow-lg text-white flex flex-col items-start justify-center hover:scale-105 transition-transform">
+          <Clock className="w-8 h-8 mb-2 opacity-80" />
+          <div className="text-4xl font-extrabold">{stats.incomplete}</div>
+          <div className="text-lg font-medium mt-1">Incomplete Tasks</div>
+        </div>
       </div>
 
-      {/* Charts Section */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-8">
-        {/* Line Chart */}
-        <Card className="rounded-2xl shadow-md hover:shadow-lg transition-shadow">
-          <CardHeader>
-            <CardTitle className="text-lg">Productivity Trend</CardTitle>
-          </CardHeader>
-          <CardContent>
+      {/* Streaks & Badges Section - prominent */}
+      <div className="mb-12 flex flex-col md:flex-row gap-8 items-center justify-between bg-gradient-to-r from-purple-700 to-indigo-700 rounded-3xl p-8 shadow-lg">
+        <div className="flex items-center gap-4">
+          <Flame className="w-10 h-10 text-orange-400" />
+          <span className="text-3xl font-bold text-white">
+            {stats.streak} days
+          </span>
+          <span className="text-lg text-gray-200 ml-2">Current streak</span>
+        </div>
+        <div className="flex gap-4 flex-wrap">
+          {stats.badges.length > 0 ? (
+            stats.badges.map((badge, idx) => (
+              <div
+                key={idx}
+                className="flex items-center gap-2 bg-white/10 px-5 py-2 rounded-2xl shadow-sm hover:bg-white/20 transition-colors"
+              >
+                {badge.icon}
+                <span className="text-lg font-medium text-white">
+                  {badge.name}
+                </span>
+              </div>
+            ))
+          ) : (
+            <span className="text-gray-300">No badges yet</span>
+          )}
+        </div>
+      </div>
+
+      {/* Charts Section - graphical comparison and trends */}
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 mb-8">
+        {/* Bar Chart: Graphical Comparison of Tasks */}
+        <div className="rounded-2xl shadow-md hover:shadow-lg transition-shadow bg-white dark:bg-gray-800">
+          <div className="px-6 pt-6 pb-2">
+            <div className="font-semibold text-lg">
+              Task Category Comparison
+            </div>
+          </div>
+          <div className="px-6 pb-6 pt-2">
+            <ResponsiveContainer width="100%" height={220}>
+              <BarChart data={comparisonData}>
+                <CartesianGrid strokeDasharray="3 3" />
+                <XAxis dataKey="name" />
+                <YAxis allowDecimals={false} />
+                <Tooltip />
+                <Bar dataKey="value" fill="#6366F1" radius={[8, 8, 0, 0]} />
+              </BarChart>
+            </ResponsiveContainer>
+          </div>
+        </div>
+        {/* Line Chart: Productivity Trend */}
+        <div className="rounded-2xl shadow-md hover:shadow-lg transition-shadow bg-white dark:bg-gray-800">
+          <div className="px-6 pt-6 pb-2">
+            <div className="font-semibold text-lg">Productivity Trend</div>
+          </div>
+          <div className="px-6 pb-6 pt-2">
             <ResponsiveContainer width="100%" height={220}>
               <LineChart data={productivityTrend}>
                 <CartesianGrid strokeDasharray="3 3" />
@@ -229,14 +323,14 @@ const StatsDashboard = () => {
                 />
               </LineChart>
             </ResponsiveContainer>
-          </CardContent>
-        </Card>
-        {/* Pie Chart */}
-        <Card className="rounded-2xl shadow-md hover:shadow-lg transition-shadow">
-          <CardHeader>
-            <CardTitle className="text-lg">Topic Distribution</CardTitle>
-          </CardHeader>
-          <CardContent>
+          </div>
+        </div>
+        {/* Pie Chart: Topic Distribution */}
+        <div className="rounded-2xl shadow-md hover:shadow-lg transition-shadow bg-white dark:bg-gray-800">
+          <div className="px-6 pt-6 pb-2">
+            <div className="font-semibold text-lg">Topic Distribution</div>
+          </div>
+          <div className="px-6 pb-6 pt-2">
             <ResponsiveContainer width="100%" height={220}>
               <PieChart>
                 <Pie
@@ -258,16 +352,16 @@ const StatsDashboard = () => {
                 <Legend />
               </PieChart>
             </ResponsiveContainer>
-          </CardContent>
-        </Card>
+          </div>
+        </div>
       </div>
 
-      {/* Heatmap Section */}
-      <Card className="rounded-2xl shadow-md hover:shadow-lg transition-shadow mb-8">
-        <CardHeader>
-          <CardTitle className="text-lg">Daily Study Activity</CardTitle>
-        </CardHeader>
-        <CardContent>
+      {/* Heatmap Section - keep modern look */}
+      <div className="rounded-2xl shadow-md hover:shadow-lg transition-shadow mb-8 bg-white dark:bg-gray-800">
+        <div className="px-6 pt-6 pb-2">
+          <div className="font-semibold text-lg">Daily Study Activity</div>
+        </div>
+        <div className="px-6 pb-6 pt-2">
           <div className="flex flex-col gap-2">
             {heatmapData.map((week, i) => (
               <div key={i} className="flex gap-2">
@@ -294,37 +388,8 @@ const StatsDashboard = () => {
               ))}
             </div>
           </div>
-        </CardContent>
-      </Card>
-
-      {/* Streaks & Badges Section */}
-      <Card className="rounded-2xl shadow-md hover:shadow-lg transition-shadow">
-        <CardHeader>
-          <CardTitle className="text-lg">Streaks & Badges</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="flex flex-col sm:flex-row items-center gap-6">
-            <div className="flex items-center gap-2">
-              <Flame className="w-6 h-6 text-orange-500" />
-              <span className="text-xl font-bold">{stats.streak} days</span>
-              <span className="text-gray-400 ml-2">Current streak</span>
-            </div>
-            <div className="flex gap-4 flex-wrap">
-              {stats.badges.map((badge, idx) => (
-                <div
-                  key={idx}
-                  className="flex items-center gap-1 bg-gray-100 px-3 py-1 rounded-2xl shadow-sm hover:bg-gray-200 transition-colors"
-                >
-                  {badge.icon}
-                  <span className="text-sm font-medium text-gray-700">
-                    {badge.name}
-                  </span>
-                </div>
-              ))}
-            </div>
-          </div>
-        </CardContent>
-      </Card>
+        </div>
+      </div>
     </div>
   );
 };
